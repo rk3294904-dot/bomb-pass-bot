@@ -5,6 +5,7 @@ import random
 from dotenv import load_dotenv
 from telegram import Update, BotCommand, BotCommandScopeAllGroupChats
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.request import HTTPXRequest
 
 from database import init_db, get_player, create_player, update_coins, update_stats, increment_games_played, get_leaderboard
 from words import get_random_word
@@ -12,6 +13,10 @@ from game_state import game_state
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+# PythonAnywhere proxy (remove if running locally)
+PROXY_URL = "http://proxy.server:3128"
+request = HTTPXRequest(proxy_url=PROXY_URL)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -42,7 +47,6 @@ SOUNDS = {
 }
 
 async def play_sound(chat_id, context, sound_key):
-    """Send single emoji, auto-delete after 2 seconds"""
     try:
         emoji = SOUNDS.get(sound_key, "🔔")
         msg = await context.bot.send_message(chat_id=chat_id, text=emoji)
@@ -734,7 +738,8 @@ async def set_commands(app):
 def main():
     init_db()
     
-    app = Application.builder().token(BOT_TOKEN).build()
+    # Use proxy for PythonAnywhere, remove for local
+    app = Application.builder().token(BOT_TOKEN).request(request).build()
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
